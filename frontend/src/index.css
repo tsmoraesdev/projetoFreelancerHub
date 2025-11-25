@@ -1,0 +1,43 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+html,
+body,
+#root {
+    height: 100%;
+    /* Define o fundo de todo o corpo da página como cinza escuro */
+    background-color: #1f2937;
+    /* Tailwind: bg-gray-800 */
+}
+
+
+/* --- cores linhas das colunas --- */
+
+.status-todo {
+    @apply bg-red-500 h-1 w-full rounded;
+}
+
+.status-doing {
+    @apply bg-yellow-400 h-1 w-full rounded;
+    /* Usei yellow-400 para melhor visibilidade em fundos escuros */
+}
+
+.status-done {
+    @apply bg-green-500 h-1 w-full rounded;
+}
+
+
+/* --- CLASSES DE BORDA LATERAL --- */
+
+.border-todo {
+    @apply border-l-4 border-red-500;
+}
+
+.border-doing {
+    @apply border-l-4 border-yellow-400;
+    /* Coordenado com o status-doing */
+}
+
+.border-done {
+    @apply border-l-4 border-green-500;
+}
