@@ -5,7 +5,7 @@ import { Draggable } from '@hello-pangea/dnd'
 export default function TaskCard({ task, index, onEdit, onDelete, statusBorderClass }){
   
   function formatSimpleDate(dateString) {
-    if (!dateString) return null;
+    if (!dateString) return "";
     
     const date = new Date(dateString); 
     
@@ -13,7 +13,7 @@ export default function TaskCard({ task, index, onEdit, onDelete, statusBorderCl
     return date.toLocaleDateString('pt-BR');
   }
   
-  const formattedDueDate = formatSimpleDate(task.dueDate);
+  const formattedDueDate = formatSimpleDate(task.due_date);
 
   return (
     <Draggable draggableId={String(task.id)} index={index}>

@@ -4,9 +4,9 @@ services:
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: rootpass
-      MYSQL_DATABASE: kanban_db
-      MYSQL_USER: kanban
-      MYSQL_PASSWORD: kanbanpass
+      MYSQL_DATABASE: freelancerhub_db
+      MYSQL_USER: freelancerhub_db
+      MYSQL_PASSWORD: fhpass
     volumes:
       - db_data:/var/lib/mysql
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
@@ -20,9 +20,9 @@ services:
     restart: unless-stopped
     environment:
       - DB_HOST=db
-      - DB_USER=kanban
-      - DB_PASSWORD=kanbanpass
-      - DB_NAME=kanban_db
+      - DB_USER=freelancerhub_db
+      - DB_PASSWORD=fhpass
+      - DB_NAME=freelancerhub_db
       - DB_PORT=3306
       - PORT=4000
     depends_on:
