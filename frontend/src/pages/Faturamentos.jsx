@@ -1,5 +1,7 @@
 // src/pages/Faturamentos.jsx
 import React, { useState, useEffect, useCallback, useMemo } from "react";
+// Assumindo que este utilitário de API é usado em Cronometro.jsx
+import api from '../api'; 
 import {
     CurrencyDollarIcon,
     ClockIcon,
@@ -11,27 +13,32 @@ import {
     BanknotesIcon, 
 } from "@heroicons/react/24/solid";
 
-// Importações necessárias
-import { MOCK_PROJECTS, MOCK_CLIENTES } from "../data/mocks";
+// REMOVIDO: MOCK_PROJECTS, MOCK_CLIENTES
+// REMOVIDO: TIME_ENTRIES_KEY
 import { generateInvoicePDF } from "../utils/generateInvoicePDF";
 import { formatDate, formatTime } from "../utils"; 
 
-const TIME_ENTRIES_KEY = "freelancerhub_time_entries";
+// A Taxa Horária e o Profile do Usuário podem permanecer em localStorage/Context
 const HOURLY_RATE_KEY = "freelancerhub_hourly_rate";
 const USER_PROFILE_KEY = 'user_profile'; 
-// Chave para rastrear projetos que foram marcados como TOTALMENTE pagos
 const BILLED_PROJECTS_KEY = "freelancerhub_billed_projects"; 
 
 
 // --- Constantes de Status ATUALIZADAS (Simplificadas para a UI) ---
 const PAYMENT_STATUS = {
-    // UNBILLED (Não Faturado) é mantido para entradas novas, mas tratado como PENDING na UI
-    UNBILLED: "Não Faturado", 
+    // Usando 'pending' para agrupar o que não foi pago (como o backend faz)
     PENDING: "Pendente",
     PAID: "Pago",
+    UNBILLED: "Não Faturado", // Mantido para lógica de agrupamento
 };
 
-// --- Funções Auxiliares de Sincronização ---
+// ENDPOINTS DA API
+const TIME_ENTRIES_ENDPOINT = '/api/time-entries';
+// A atualização de status de faturas é em /api/invoices/:id/status, mas aqui tratamos entradas de tempo
+const INVOICES_ENDPOINT = '/api/invoices'; 
+
+
+// --- Funções Auxiliares de Sincronização (Mantidas no LocalStorage) ---
 const getBilledProjects = () => {
     return JSON.parse(localStorage.getItem(BILLED_PROJECTS_KEY) || '[]');
 };
@@ -40,9 +47,9 @@ const saveBilledProjects = (projectIds) => {
     localStorage.setItem(BILLED_PROJECTS_KEY, JSON.stringify(projectIds));
 };
 
-// --- Componentes Auxiliares ---
+// --- Componentes Auxiliares (Não alterados) ---
 function Button({ children, onClick, color = 'indigo', title, disabled = false }) {
-    // Adiciona o estado 'disabled'
+    // ... (CÓDIGO INALTERADO)
     const baseClasses = `p-2 rounded flex items-center justify-center transition \
         ${disabled ? 'bg-gray-600 text-gray-400 cursor-not-allowed' : 'hover:scale-105'} \
         `;
@@ -66,6 +73,7 @@ function Button({ children, onClick, color = 'indigo', title, disabled = false }
 }
 
 function Resumo({ label, value, color, icon: Icon }) {
+    // ... (CÓDIGO INALTERADO)
     return (
         <div className={`p-4 bg-gray-800 rounded shadow-lg text-white flex flex-col justify-between \
             ${color === 'green' ? 'border-l-4 border-green-500' : ''}\
@@ -91,64 +99,99 @@ export default function Faturamentos() {
     const [search, setSearch] = useState("");
     const [hourlyRate, setHourlyRate] = useState(0);
     const [openProject, setOpenProject] = useState({});
+    const [isLoading, setIsLoading] = useState(true); // Novo estado de loading
+    
+    // Funções de formatação e ajuste para simular a estrutura antiga com dados da API
+    const mapEntryFromApi = (entry) => {
+        // time_entriesController.js retorna:
+        // 'time_entries.*', 'tasks.title as task_title', 'tasks.project_id', 'projects.title as project_title', 'projects.client_id'
+        
+        // Ajusta a entrada para a estrutura esperada pelo frontend
+        // O campo `is_billed` no backend é um booleano que determina se a entrada foi faturada (PENDING)
+        // O campo `status` está sendo simulado no frontend para o agrupamento
+        
+        // Simulação do mapeamento de status:
+        // is_billed (backend) = true -> PENDING (frontend)
+        // is_billed (backend) = false -> UNBILLED (frontend)
+        // Obs: O `Faturamentos.jsx` original migrava `isBilled: true` para PENDING, mas a lógica de status total está complexa.
+        // Vamos usar UNBILLED para `is_billed: false` e PENDING para `is_billed: true` inicialmente, 
+        // e usaremos a lógica de status do projeto do frontend para determinar o status de exibição.
 
-    // ---------------- LOAD/SAVE -----------------
-    const save = useCallback((updatedEntries) => {
-        setEntries(updatedEntries);
-        localStorage.setItem(TIME_ENTRIES_KEY, JSON.stringify(updatedEntries));
+        const hoursWorked = entry.duration_seconds / 3600;
+
+        return {
+            id: entry.id,
+            projectId: entry.project_id, // do join
+            taskTitle: entry.task_title, // do join
+            projectTitle: entry.project_title, // do join
+            client_id: entry.client_id, // do join
+            durationSeconds: entry.duration_seconds,
+            hoursWorked: hoursWorked, // calculado
+            // Simulação de status do frontend baseada no `is_billed` do backend
+            status: entry.is_billed ? PAYMENT_STATUS.PENDING : PAYMENT_STATUS.UNBILLED, 
+            date: entry.start_time, // usando start_time como data de referência
+        };
+    };
+
+    // ---------------- LOAD DATA FROM API -----------------
+    
+    // Função para buscar os registros de tempo
+    const fetchTimeEntries = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            // Usa o endpoint que chama timeEntriesController.list
+            const response = await api.get(TIME_ENTRIES_ENDPOINT);
+            
+            // Mapeia os dados da API para o formato esperado pelo componente
+            const mappedEntries = response.data.map(mapEntryFromApi);
+
+            setEntries(mappedEntries);
+            
+        } catch (error) {
+            console.error('Erro ao buscar registros de tempo:', error);
+            // Poderia mostrar uma mensagem de erro na UI
+        } finally {
+            setIsLoading(false);
+        }
     }, []);
     
-    const load = useCallback(() => {
-        const savedEntries = JSON.parse(localStorage.getItem(TIME_ENTRIES_KEY) || '[]');
-        
-        // CORREÇÃO: Garante que todas as entradas tenham o novo campo 'status'
-        const migratedEntries = savedEntries.map(entry => {
-            // Se for entrada antiga com 'isBilled'
-            if (entry.isBilled !== undefined) {
-                return { 
-                    ...entry, 
-                    status: entry.isBilled ? PAYMENT_STATUS.PENDING : PAYMENT_STATUS.UNBILLED,
-                    isBilled: undefined 
-                };
-            }
-            // Se for entrada nova mas sem status definido (deve ser UNBILLED)
-            if (!entry.status) {
-                return { ...entry, status: PAYMENT_STATUS.UNBILLED };
-            }
-            return entry;
-        });
-
-        setEntries(migratedEntries);
-        
+    // Função para carregar a taxa horária (mantida no localStorage)
+    const loadHourlyRate = useCallback(() => {
         const savedRate = parseFloat(localStorage.getItem(HOURLY_RATE_KEY)) || 50.00;
         setHourlyRate(savedRate);
     }, []);
+
     
     useEffect(() => {
-        load();
-    }, [load]);
+        loadHourlyRate();
+        fetchTimeEntries();
+        // Listener para atualizar se o cronômetro salvar uma nova entrada
+        window.addEventListener('freelancerhub:time_entry_update', fetchTimeEntries);
+        
+        return () => {
+            window.removeEventListener('freelancerhub:time_entry_update', fetchTimeEntries);
+        };
+    }, [loadHourlyRate, fetchTimeEntries]);
 
 
     // ---------------- LÓGICA DE AGRUPAMENTO (Por Projeto) -----------------
     const projectsSummary = useMemo(() => {
         const summary = entries.reduce((acc, entry) => {
             const projectId = entry.projectId;
-            const projectData = MOCK_PROJECTS.find(p => p.id === projectId);
             
-            if (!projectData) return acc;
-            
-            const client = MOCK_CLIENTES.find(c => c.id === projectData.clienteId);
+            // Simulação de busca de nome do cliente (em um app real, o cliente viria no join)
+            // Como o list do controller retorna client_id, podemos simular o nome do cliente aqui
+            const clientName = `Cliente ID ${entry.client_id}`; // Simulação
             
             if (!acc[projectId]) {
                 acc[projectId] = {
                     id: projectId,
-                    title: projectData.titulo,
-                    clientName: client?.nome || 'Cliente Desconhecido',
+                    title: entry.projectTitle, // do join
+                    clientName: clientName, // Simulação
                     totalDurationSeconds: 0,
                     totalHours: 0,
                     totalValue: 0,
                     entries: [],
-                    // Status inicial para o projeto (o mais "urgente")
                     projectStatus: PAYMENT_STATUS.PAID,
                 };
             }
@@ -160,8 +203,8 @@ export default function Faturamentos() {
             acc[projectId].entries.push(entry);
             
             // Lógica de Status do Projeto: O projeto assume o status mais "baixo"
-            // Se alguma entrada for UNBILLED ou PENDING, o projeto é PENDING.
-            if (entry.status === PAYMENT_STATUS.UNBILLED || entry.status === PAYMENT_STATUS.PENDING) {
+            // Se alguma entrada for UNBILLED (is_billed: false) ou PENDING (is_billed: true), o projeto é PENDING.
+            if (entry.status !== PAYMENT_STATUS.PAID) {
                 acc[projectId].projectStatus = PAYMENT_STATUS.PENDING;
             }
 
@@ -192,91 +235,87 @@ export default function Faturamentos() {
             );
         }
 
+        // Ordena por ID do projeto
         return filteredProjects.sort((a, b) => b.id - a.id);
     }, [entries, hourlyRate, filter, search]);
 
 
-    // ---------------- HANDLERS -----------------
+    // ---------------- HANDLERS DE AÇÃO DA API -----------------
     
-    // Deleta entrada individual
-    const handleDelete = useCallback((entryId) => {
-        const updatedEntries = entries.filter(e => e.id !== entryId);
-        save(updatedEntries);
-    }, [entries, save]);
+    // Deleta entrada individual (usa timeEntriesController.remove)
+    const handleDelete = useCallback(async (entryId) => {
+        if (!window.confirm('Tem certeza que deseja excluir este registro de tempo?')) return;
+        
+        try {
+            // Chama a API de exclusão
+            await api.delete(`${TIME_ENTRIES_ENDPOINT}/${entryId}`);
+            
+            // Se a exclusão for bem-sucedida, atualiza a lista de entradas
+            alert('Registro de tempo excluído com sucesso.');
+            fetchTimeEntries(); 
 
-    
-    // Marca TODAS as entradas (UNBILLED/PENDING) de um projeto como PAGAS
-    const handleMarkAsPaid = useCallback((projectId) => {
-        const updatedEntries = entries.map(entry => {
-            if (entry.projectId === projectId && (entry.status === PAYMENT_STATUS.PENDING || entry.status === PAYMENT_STATUS.UNBILLED)) {
-                return { ...entry, status: PAYMENT_STATUS.PAID };
-            }
-            return entry;
-        });
-        save(updatedEntries);
-
-        // SINCRONIZAÇÃO: Adiciona o projeto à lista de projetos pagos
-        const billedProjects = getBilledProjects();
-        if (!billedProjects.includes(projectId)) {
-            saveBilledProjects([...billedProjects, projectId]);
+        } catch (error) {
+            console.error('Erro ao excluir registro de tempo:', error);
+            alert('Erro ao excluir registro de tempo. Verifique a permissão.');
         }
-        
-        // NOVO: Despacha um evento customizado para notificar outros componentes na mesma janela
-        window.dispatchEvent(new Event('freelancerhub:billed_update'));
 
-    }, [entries, save]);
+    }, [fetchTimeEntries]);
+
     
-    // Desfaz o status (volta PAGO para PENDENTE)
-    const handleUnpayProject = useCallback((projectId) => {
-        const updatedEntries = entries.map(entry => {
-            if (entry.projectId === projectId && entry.status === PAYMENT_STATUS.PAID) {
-                return { ...entry, status: PAYMENT_STATUS.PENDING };
-            }
-            return entry;
-        });
-        save(updatedEntries);
+    /*
+     * NOVO HANDLER: Cria uma Fatura de verdade (em vez de só marcar como Pago)
+     * Isso utiliza invoicesController.create e delega a lógica de "marcar como pago" 
+     * para o backend.
+    */
+    const handleCreateInvoice = useCallback(async (project) => {
+        // Coleta as IDs das entradas que NÃO foram pagas (PENDING/UNBILLED)
+        const idsToBill = project.entries
+                            .filter(e => e.status !== PAYMENT_STATUS.PAID)
+                            .map(e => e.id);
 
-        // SINCRONIZAÇÃO: Remove o projeto da lista de projetos pagos
-        const billedProjects = getBilledProjects();
-        const updatedBilledProjects = billedProjects.filter(id => id !== projectId);
-        saveBilledProjects(updatedBilledProjects);
+        if (idsToBill.length === 0) {
+            alert('Não há entradas de tempo não faturadas para este projeto.');
+            return;
+        }
 
-        // NOVO: Despacha um evento customizado para notificar outros componentes na mesma janela
-        window.dispatchEvent(new Event('freelancerhub:billed_update'));
+        if (!window.confirm(`Gerar Fatura para o projeto "${project.title}" no valor de R$ ${project.totalValue.toFixed(2)}?`)) {
+            return;
+        }
+
+        try {
+            const data = {
+                // O backend agora calcula o client_id e o valor total (amount)
+                time_entry_ids: idsToBill
+            };
+
+            // Chama o create da API
+            await api.post(INVOICES_ENDPOINT, data); 
+
+            alert('Fatura criada com sucesso! Atualizando registros de tempo...');
+            
+            // Recarrega as entradas para refletir as mudanças no status is_billed
+            fetchTimeEntries();
+            
+            // Despacha evento de atualização
+            window.dispatchEvent(new Event('freelancerhub:billed_update'));
+
+        } catch (error) {
+            console.error('Erro ao criar fatura:', error);
+            // Mostrar erro do backend se disponível
+            const errorMessage = error.response?.data?.error || 'Erro ao criar fatura. Verifique o console para detalhes.';
+            alert(errorMessage);
+        }
+
+    }, [fetchTimeEntries]);
         
-    }, [entries, save]);
 
-
-    // Geração de PDF por Projeto (Lógica mantida)
-    const handleGenerateInvoice = useCallback((project) => {
-        const projectData = MOCK_PROJECTS.find(p => p.id === project.id);
-        const client = MOCK_CLIENTES.find(c => c.id === projectData.clienteId);
-        
-        const projectInvoiceData = {
-            projectName: project.title,
-            client: {
-                nome: client?.nome || project.clientName, 
-                email: client?.email, 
-            },
-            items: project.entries.map(entry => ({
-                taskTitle: entry.taskTitle,
-                hours: entry.hoursWorked,
-                value: (entry.hoursWorked * hourlyRate), // Valor calculado
-                status: entry.status, 
-            })),
-        };
-        
-        // Assumindo que generateInvoicePDF é o módulo que exporta generateProjectPDF
-        generateInvoicePDF(projectInvoiceData);
-        
-    }, [hourlyRate]);
-
-    // ---------------- RESUMO DO DASHBOARD -----------------
+    // ---------------- RESUMO DO DASHBOARD (Lógica Inalterada) -----------------
     const { totalHours, totalValuePending, totalValuePaid, totalProjects } = useMemo(() => {
         const totalHours = entries.reduce((sum, e) => sum + e.hoursWorked, 0);
         
+        // Agora o PENDING/UNBILLED é a soma do que não tem status PAID
         const totalValuePending = entries
-            .filter(e => e.status === PAYMENT_STATUS.PENDING || e.status === PAYMENT_STATUS.UNBILLED)
+            .filter(e => e.status !== PAYMENT_STATUS.PAID) 
             .reduce((sum, e) => sum + (e.hoursWorked * hourlyRate), 0);
         
         const totalValuePaid = entries
@@ -295,12 +334,18 @@ export default function Faturamentos() {
     }, [entries, hourlyRate]);
 
 
+    if (isLoading) {
+        return <div className="p-4 sm:p-8 bg-gray-900 min-h-full text-white text-center text-xl">Carregando Faturamentos...</div>;
+    }
+
+
     return (
         <div className="p-4 sm:p-8 bg-gray-900 min-h-full">
             <h1 className="text-3xl sm:text-4xl font-bold text-white mb-6">Faturamentos</h1>
 
             {/* 1. Resumo */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                {/* ... (CÓDIGO INALTERADO) */}
                 <Resumo 
                     label="Projetos Registrados" 
                     value={totalProjects} 
@@ -323,12 +368,13 @@ export default function Faturamentos() {
                     label="Valor Total Pago" 
                     value={`R$ ${totalValuePaid.toFixed(2)}`} 
                     color="green" 
-                    icon={BanknotesIcon} // Usando BanknotesIcon para Pago
+                    icon={BanknotesIcon} 
                 />
             </div>
 
             {/* 2. Filtros e Configurações */}
             <div className="bg-gray-800 p-5 rounded-xl shadow-xl border border-gray-700 mb-8">
+                {/* ... (CÓDIGO INALTERADO) */}
                 <h2 className="text-xl font-semibold text-white mb-4">Configurações e Filtros</h2>
                 
                 <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
@@ -387,6 +433,7 @@ export default function Faturamentos() {
                 ) : (
                     <div className="space-y-6">
                         {projectsSummary.map((project) => {
+                            // isPaid agora verifica se *todas* as entradas do projeto são PAID
                             const isPaid = project.entries.every(e => e.status === PAYMENT_STATUS.PAID);
                             
                             // O status é Pago se todas as entradas forem Pago, caso contrário é Pendente.
@@ -424,27 +471,20 @@ export default function Faturamentos() {
 
                                         <div className="flex flex-wrap gap-2 justify-end">
                                             
-                                            {/* Ação de Pagamento */}
-                                            {isPaid ? (
-                                                // Botão para desfazer o pagamento
-                                                <Button
-                                                    color="yellow"
-                                                    onClick={() => handleUnpayProject(project.id)}
-                                                    title="Desfazer Pagamento (Voltar para Pendente)"
-                                                >
-                                                    <ArrowUturnLeftIcon className="h-4 w-4" /> Desfazer Pago
-                                                </Button>
-                                            ) : (
-                                                // Botão para marcar como Pago
+                                            {/* Ação de Pagamento/Faturamento */}
+                                            {!isPaid && (
+                                                // Botão para criar fatura para entradas não pagas
                                                 <Button
                                                     color="green"
-                                                    onClick={() => handleMarkAsPaid(project.id)}
-                                                    title="Marcar como Pago"
+                                                    onClick={() => handleCreateInvoice(project)}
+                                                    title="Gerar Fatura e Marcar Entradas como Faturadas"
                                                 >
-                                                    <BanknotesIcon className="h-4 w-4" /> Marcar Pago
+                                                    <BanknotesIcon className="h-4 w-4" /> Gerar Fatura
                                                 </Button>
                                             )}
-
+                                            
+                                            {/* O botão de "Desfazer Pago" é removido, pois o status de pago deve ser gerenciado pela API de Faturas. */}
+                                            
                                             {/* Gerar PDF */}
                                             <Button
                                                 color="indigo"
@@ -473,7 +513,7 @@ export default function Faturamentos() {
                                         
                                         {project.entries.map((entry) => {
                                             const entryStatusColor = entry.status === PAYMENT_STATUS.PAID ? 'text-green-400' 
-                                                : 'text-yellow-400'; // UNBILLED e PENDING são amarelos agora
+                                                : 'text-yellow-400';
                                                 
                                             return (
                                                 <div key={entry.id} className="flex justify-between items-center bg-gray-700 p-3 rounded-lg transition hover:bg-gray-600">
@@ -492,7 +532,7 @@ export default function Faturamentos() {
                                                         </p>
                                                     </div>
                                                     
-                                                    {/* Ação de Excluir Tarefa (Mantida) */}
+                                                    {/* Ação de Excluir Tarefa */}
                                                     <Button 
                                                         color="red"
                                                         onClick={() => handleDelete(entry.id)}

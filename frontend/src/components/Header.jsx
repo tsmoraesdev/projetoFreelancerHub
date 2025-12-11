@@ -15,10 +15,10 @@ export default function Header({ user, onLogout }) {
         <header className="bg-gray-800 p-3 border-b border-gray-700 flex justify-between items-center sticky top-0 z-10">
             {/* Logo MAIOR e no lugar do texto */}
             <div 
-                className="flex items-center cursor-pointer" 
+                className="max-h-14 w-72 md:w-96 object-contain" 
                 onClick={() => navigate('/')} // Adiciona funcionalidade para voltar à home ao clicar na logo
             >
-                <img src={logo} alt="FreelancerHub Logo" className="h-28 w-auto" /> 
+                <img src={logo} alt="FreelancerHub Logo" className="max-h-200 w-60 -mt-12" /> 
             </div>
 
             {/* Ícones de Ação (Perfil e Sair) */}

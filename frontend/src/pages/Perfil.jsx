@@ -4,11 +4,14 @@ import {
     UserIcon, 
     BanknotesIcon, 
     BuildingOffice2Icon,
-    DevicePhoneMobileIcon 
+    DevicePhoneMobileIcon,
+    KeyIcon // Novo ícone para credenciais
 } from '@heroicons/react/24/solid';
 
+import api from '../api';
+
 // Chave do LocalStorage para persistir os dados do perfil
-const PROFILE_DATA_KEY = 'FREELANCERHUB_PROFILE_DATA';
+//const PROFILE_DATA_KEY = 'FREELANCERHUB_PROFILE_DATA';
 
 const initialProfileState = {
     // 1. Dados Pessoais/Empresa
@@ -32,37 +35,130 @@ const initialProfileState = {
 
 export default function Perfil() {
     const [profile, setProfile] = useState(initialProfileState);
-    const [status, setStatus] = useState(null); // 'success', 'error', null
+    const [status, setStatus] = useState(null); // 'success_save', 'error', null para Dados de Faturamento
+    const [loading, setLoading] = useState(true); // Estado de carregamento
 
-    // Efeito para carregar dados do LocalStorage ao montar o componente
+    // Novos estados para alteração de credenciais
+    const [newEmail, setNewEmail] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [currentPassword, setCurrentPassword] = useState(''); // Para verificação
+    const [credentialStatus, setCredentialStatus] = useState(null); // 'success', 'error', null para Credenciais
+
+    // Efeito para CARREGAR dados do Backend ao montar o componente
     useEffect(() => {
-        const storedData = localStorage.getItem(PROFILE_DATA_KEY);
-        if (storedData) {
-            // Garante que o estado inicial seja preenchido com os dados salvos
-            setProfile(prev => ({ ...prev, ...JSON.parse(storedData) }));
+        async function fetchProfile() {
+            try {
+                // GET /api/profile
+                const response = await api.get('/api/profile');
+                // Se houver dados no banco, usa eles. Se não houver, mantém o estado inicial.
+                if (response.data) {
+                    setProfile(prev => ({ ...prev, ...response.data }));
+                }
+            } catch (error) {
+                console.error("Erro ao carregar dados do perfil:", error);
+            } finally {
+                setLoading(false); // Finaliza o carregamento inicial
+            }
         }
+        fetchProfile();
     }, []);
 
+    // Função de tratamento de mudança para os campos do Perfil/Faturamento
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setProfile(prev => ({
-            ...prev,
-            [name]: value,
+        setProfile(prevProfile => ({
+            ...prevProfile,
+            [name]: value
         }));
     };
 
-    const handleSave = (e) => {
+    // Função para SALVAR/ATUALIZAR dados de Faturamento no Backend
+    const handleSave = async (e) => {
         e.preventDefault();
+        setStatus(null);
+        setLoading(true);
+
         try {
-            localStorage.setItem(PROFILE_DATA_KEY, JSON.stringify(profile));
-            setStatus('success');
+            // POST /api/profile (UPSERT)
+            await api.post('/api/profile', profile); 
+            setStatus('success_save');
             setTimeout(() => setStatus(null), 3000);
         } catch (error) {
             console.error("Erro ao salvar dados do perfil:", error);
             setStatus('error');
             setTimeout(() => setStatus(null), 5000);
+        } finally {
+             setLoading(false);
         }
     };
+    
+    // Função para SALVAR/ATUALIZAR CREDENCIAIS
+    const handleCredentialUpdate = async (e) => {
+        e.preventDefault();
+        setCredentialStatus(null);
+        
+        if (!currentPassword) {
+            setCredentialStatus('error');
+            alert("A senha atual é obrigatória para atualizar as credenciais.");
+            return;
+        }
+
+        const payload = {
+            currentPassword,
+            newEmail: newEmail || undefined,
+            newPassword: newPassword || undefined,
+        };
+        
+        // Verifica se há algo para atualizar além da senha atual
+        if (!payload.newEmail && !payload.newPassword) {
+            setCredentialStatus('error');
+            alert("Preencha o novo e-mail ou a nova senha.");
+            return;
+        }
+        
+        let emailChanged = !!newEmail; // Flag para verificar se o email foi alterado
+        setLoading(true);
+
+        try {
+            // Chamada para um endpoint que deve ser criado no backend (ex: /api/auth/update-credentials)
+            // Note: Se o App.jsx tem uma função onLogout, seria melhor chamá-la aqui.
+            await api.post('/api/auth/update-credentials', payload);
+            
+            setCredentialStatus('success');
+
+            // Limpa os campos após o sucesso
+            setNewEmail('');
+            setNewPassword('');
+            setCurrentPassword('');
+
+            if (emailChanged) {
+                // Se o email foi alterado, o usuário deve ser forçado a logar novamente.
+                alert("E-mail alterado com sucesso! Você será desconectado para realizar um novo login com o novo e-mail.");
+                // Força o refresh, invalidando o login atual e forçando a rota de login
+                window.location.reload(); 
+            } else {
+                 setTimeout(() => setCredentialStatus(null), 3000);
+            }
+
+        } catch (err) {
+            const errorMessage = err.response?.data?.error || 'Erro ao atualizar credenciais.';
+            setCredentialStatus('error');
+            alert(errorMessage);
+            console.error("Erro ao atualizar credenciais:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Exibição de carregamento inicial
+    if (loading && status !== 'error' && credentialStatus !== 'error') {
+        return (
+            <div className="p-8 min-h-screen bg-gray-900 text-white flex justify-center items-center">
+                <p className="text-xl text-indigo-400">Carregando perfil...</p>
+            </div>
+        );
+    }
+
 
     return (
         <div className="p-8 min-h-screen bg-gray-900 text-white">
@@ -73,6 +169,8 @@ export default function Perfil() {
                 Preencha seus dados para que sejam incluídos nos PDFs de faturamento (como Emissor da fatura) e para referência pessoal.
             </p>
 
+            {/* O formulário agora é dividido em duas partes (faturamento e credenciais), 
+                mas mantemos a tag form para os dados de faturamento. */}
             <form onSubmit={handleSave} className="space-y-8 max-w-4xl mx-auto">
                 
                 {/* ------------------------- 1. DADOS DA EMPRESA / PESSOAL ------------------------- */}
@@ -124,7 +222,7 @@ export default function Perfil() {
                     </div>
                 </Card>
 
-                {/* ------------------------- 2. DADOS DE CONTATO ------------------------- */}
+                {/* ------------------------- 2. DADOS DE CONTATO (Perfil/Faturamento) ------------------------- */}
                 <Card title="Dados de Contato" icon={DevicePhoneMobileIcon}>
                     <div className="grid md:grid-cols-2 gap-4">
                         <Input 
@@ -140,6 +238,7 @@ export default function Perfil() {
                             value={profile.email} 
                             onChange={handleChange} 
                             required
+                            placeholder="Este e-mail será usado nas faturas"
                         />
                     </div>
                 </Card>
@@ -186,11 +285,11 @@ export default function Perfil() {
                     </div>
                 </Card>
 
-                {/* ------------------------- BOTÃO DE SALVAR E FEEDBACK ------------------------- */}
+                {/* ------------------------- BOTÃO DE SALVAR DADOS DE FATURAMENTO ------------------------- */}
                 <div className="flex justify-end pt-4">
-                    {status === 'success' && (
+                    {status === 'success_save' && (
                         <p className="text-green-500 font-semibold mr-4 self-center">
-                            Dados salvos com sucesso!
+                            Dados salvos com sucesso no servidor!
                         </p>
                     )}
                     {status === 'error' && (
@@ -200,13 +299,71 @@ export default function Perfil() {
                     )}
                     <button 
                         type="submit" 
-                        className="px-8 py-3 bg-indigo-600 text-white rounded-xl text-lg font-bold hover:bg-indigo-700 transition"
+                        disabled={loading} // Desabilita enquanto carrega/salva
+                        className={`px-8 py-3 bg-indigo-600 text-white rounded-xl text-lg font-bold transition 
+                            ${loading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-indigo-700'}`}
                     >
-                        Salvar Perfil
+                        {loading && status !== 'success_save' ? 'Salvando...' : 'Salvar Perfil'}
                     </button>
                 </div>
 
             </form>
+
+            {/* ------------------------- 4. ALTERAÇÃO DE CREDENCIAIS ------------------------- */}
+            <div className="max-w-4xl mx-auto mt-8">
+                <Card title="Alterar E-mail de Login e Senha" icon={KeyIcon}>
+                    <p className="text-sm text-gray-400 mb-4">
+                        **ATENÇÃO:** Se você alterar o e-mail, será desconectado e precisará fazer login novamente com o novo e-mail.
+                    </p>
+                    <form onSubmit={handleCredentialUpdate} className="space-y-4">
+                        <Input 
+                            label="Novo E-mail de Login" 
+                            name="newEmail" 
+                            type="email"
+                            value={newEmail} 
+                            onChange={e => setNewEmail(e.target.value)} 
+                            placeholder="Deixe vazio para manter o atual"
+                        />
+                        <Input 
+                            label="Nova Senha" 
+                            name="newPassword" 
+                            type="password"
+                            value={newPassword} 
+                            onChange={e => setNewPassword(e.target.value)} 
+                            placeholder="Deixe vazio para manter a atual"
+                        />
+                        <Input 
+                            label="Senha Atual (Obrigatório para confirmar)" 
+                            name="currentPassword" 
+                            type="password"
+                            value={currentPassword} 
+                            onChange={e => setCurrentPassword(e.target.value)} 
+                            required
+                        />
+                        
+                        <div className="pt-2 flex justify-end items-center">
+                            {credentialStatus === 'success' && (
+                                <p className="text-green-500 font-semibold mr-4 self-center">
+                                    {newEmail ? 'E-mail alterado! Recarregando...' : 'Senha alterada com sucesso!'}
+                                </p>
+                            )}
+                            {credentialStatus === 'error' && (
+                                <p className="text-red-500 font-semibold mr-4 self-center">
+                                    Erro ao atualizar credenciais!
+                                </p>
+                            )}
+                            <button 
+                                type="submit" 
+                                disabled={loading}
+                                className={`px-6 py-2 bg-yellow-600 text-white rounded-xl font-bold transition 
+                                ${loading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-yellow-700'}`}
+                            >
+                                {loading && credentialStatus !== 'success' ? 'Aguarde...' : 'Atualizar Credenciais'}
+                            </button>
+                        </div>
+                    </form>
+                </Card>
+            </div>
         </div>
     );
 }
@@ -232,7 +389,7 @@ function Label({ children, htmlFor }) {
     );
 }
 
-function Input({ label, name, value, onChange, type = 'text', required = false }) {
+function Input({ label, name, value, onChange, type = 'text', required = false, placeholder = '' }) {
     return (
         <div>
             <Label htmlFor={name}>{label} {required && <span className="text-red-500">*</span>}</Label>
@@ -243,6 +400,7 @@ function Input({ label, name, value, onChange, type = 'text', required = false }
                 value={value}
                 onChange={onChange}
                 required={required}
+                placeholder={placeholder}
                 className="w-full p-3 border border-gray-600 rounded bg-gray-700 text-white placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500"
             />
         </div>
