@@ -106,13 +106,6 @@ export async function generateInvoicePDF({ projectName, client, items = [], pixP
         doc.setFont("helvetica", "bold");
         doc.text("FREELANCERHUB", lineEnd, y, null, null, "right");
 
-        // Código para adicionar o logo:
-        /* try {
-            doc.addImage(logo, "SVG/PNG", lineEnd - logoWidth, y - 5, logoWidth, logoHeight);
-        } catch(e) { 
-            // Fallback: se o SVG não carregar, mantemos apenas o texto
-        }
-        */
 
         y += 4;
 

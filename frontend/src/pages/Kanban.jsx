@@ -126,7 +126,7 @@ export default function Kanban(){
         
     }, [projectId, pid, navigate, fetchProject, refreshTasks]);
     
-    // --- LÓGICA DE AÇÕES DO PROJETO (AGORA COM API) ---
+    // --- LÓGICA DE AÇÕES DO PROJETO ---
 
     
     async function handleProjectEditSave() {
@@ -316,7 +316,6 @@ export default function Kanban(){
 
     return (
         <div className="p-8 bg-gray-900 min-h-screen">
-            {/* HEADER DO PROJETO (Com Edição) */}
             <div className="bg-gray-800 p-6 rounded-lg shadow-xl mb-8 border border-gray-700">
                 
                 {/* TÍTULO DO PROJETO (EDITÁVEL) */}
@@ -514,7 +513,6 @@ export default function Kanban(){
                                 className="w-full p-3 border border-gray-600 rounded bg-gray-700 text-white placeholder-gray-400"
                             />
                             
-                            {/* CORREÇÃO 9: Usando 'due_date' no input (correto) */}
                             <input 
                                 type="date"
                                 placeholder="Data de Vencimento" 
@@ -570,11 +568,9 @@ export default function Kanban(){
                                 className="w-full p-3 border border-gray-600 rounded bg-gray-700 text-white placeholder-gray-400"
                             />
                             
-                            {/*  CORREÇÃO CRÍTICA: Usando 'due_date' (snake_case) no value e no onChange */}
                             <input 
                                 type="date"
                                 placeholder="Data de Vencimento" 
-                                // O valor do input type="date" deve ser uma string YYYY-MM-DD
                                 value={editTask.due_date || ''} 
                                 onChange={e => setEditTask({...editTask, due_date: e.target.value})} 
                                 className="w-full p-3 border border-gray-600 rounded bg-gray-700 text-white placeholder-gray-400"

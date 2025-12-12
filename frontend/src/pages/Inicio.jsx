@@ -11,11 +11,9 @@ import {
 } from '@heroicons/react/24/solid';
 
 
-
 // Função utilitária simples para formatar a data de exibição
 const formatDate = (dateStr) => {
     if (!dateStr) return 'N/A';
-    // É importante tratar a string 'YYYY-MM-DD' para evitar problemas de fuso horário
     const date = new Date(dateStr.replace(/-/g, '/')); 
     return date.toLocaleDateString('pt-BR', { year: 'numeric', month: 'short', day: 'numeric' });
 };
@@ -34,7 +32,6 @@ const KPI = ({ icon: Icon, label, value, color }) => (
 
 // --- NOVO COMPONENTE: CALENDÁRIO REAL DE TAREFAS ---
 const CalendarioReal = ({ tasks }) => {
-    // Agrupa tarefas por data para facilitar a exibição
     const groupedTasks = tasks.reduce((acc, task) => {
         const dateKey = formatDate(task.due_date);
         if (!acc[dateKey]) {
@@ -45,7 +42,6 @@ const CalendarioReal = ({ tasks }) => {
     }, {});
 
     const sortedDates = Object.keys(groupedTasks).sort((a, b) => {
-        // Ordena as datas cronologicamente
         const parseDate = (dateStr) => {
             const [day, month, year] = dateStr.split('/');
             return new Date(`${year}-${month}-${day}`);
@@ -56,7 +52,7 @@ const CalendarioReal = ({ tasks }) => {
     return (
         <div className="bg-gray-800 p-6 rounded-xl shadow-lg h-full overflow-y-auto">
             <h2 className="text-xl font-bold mb-4 flex items-center gap-2 border-b border-gray-700 pb-2">
-                <CalendarDaysIcon className="w-6 h-6 text-indigo-400" /> Tarefas Pendentes (Próximos 7 Dias)
+                <CalendarDaysIcon className="w-6 h-6 text-cyan-300" /> Tarefas Pendentes (Próximos 7 Dias)
             </h2>
             
             {sortedDates.length === 0 ? (
@@ -104,15 +100,13 @@ export default function Inicio() {
     });
     const [loading, setLoading] = useState(true);
 
-    // 2. Carrega todos os dados do Backend (Nova Rota /api/dashboard)
     useEffect(() => {
         const loadDashboardData = async () => {
             setLoading(true);
             const token = localStorage.getItem('authToken'); 
             
             try {
-                // Chama a nova rota de agregação
-                const response = await fetch('/api/dashboard', {
+                const response = await fetch('/api/inicio/', {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json',
@@ -120,10 +114,12 @@ export default function Inicio() {
                 });
 
                 if (!response.ok) {
-                    throw new Error(`Erro ao buscar dados: ${response.statusText}`);
+                    const errorDetails = await response.text().catch(() => 'Sem detalhes de erro');
+                    console.error("Resposta não OK:", response.status, errorDetails.substring(0, 100));
+                    throw new Error(`Erro ${response.status}: Falha na requisição da API.`);
                 }
                 
-                const result = await response.json();
+                const result = await response.json(); 
                 setData(result);
             } catch (error) {
                 console.error("Falha ao carregar dados do dashboard:", error);

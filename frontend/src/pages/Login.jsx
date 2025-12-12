@@ -1,6 +1,5 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom';
-// IMPORTAÇÃO CORRETA DA API
 import api, { setToken } from '../api'; 
 import logo from '../assets/Freelancerhub.svg'
 
@@ -8,20 +7,19 @@ export default function Login({ onLogin }){
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const [mode, setMode] = useState('login'); // 'login' ou 'register'
+  const [mode, setMode] = useState('login'); 
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [message, setMessage] = useState(null);
 
-  // Removendo o 'useNavigate' se ele não for usado dentro do Login.jsx (o App.jsx cuida disso via onLogin)
-  // const navigate = useNavigate(); 
+
 
   async function handleSubmit(e){
     e.preventDefault();
     setLoading(true);
-    setError(null); // Limpa erros anteriores
-    setMessage(null); // Limpa mensagens anteriores
+    setError(null); 
+    setMessage(null); 
 
     // Determina o endpoint e o payload com base no modo
     const endpoint = mode === 'login' ? '/api/auth/login' : '/api/auth/register';
@@ -35,9 +33,6 @@ export default function Login({ onLogin }){
         
         // 1. Configura o token JWT para futuras requisições autenticadas
         setToken(token);
-        
-        // 2. Chama a função onLogin (que deve estar no App.jsx) para definir o estado do usuário
-        // e navegar para a Dashboard.
         onLogin(user,token); 
 
       } else { // mode === 'register'
@@ -47,11 +42,10 @@ export default function Login({ onLogin }){
       }
     } catch (err) {
       // Lida com erros da API (ex: Credenciais inválidas, Usuário já existe)
-      // Tenta pegar a mensagem de erro do backend, se não, usa uma genérica
       const errorMessage = err.response?.data?.error || 'Erro de conexão ou do servidor. Verifique se o backend está rodando.';
       setError(errorMessage);
     } finally {
-      setLoading(false); // Remove o estado de carregamento
+      setLoading(false); 
     }
   }
 
@@ -92,7 +86,7 @@ export default function Login({ onLogin }){
                 required
             />
           )}
-          {/* INPUTS: Fundo bg-gray-700, borda border-gray-600, texto branco, placeholder cinza */}
+
           <input 
               className="w-full mb-3 p-3 border border-gray-600 rounded focus:ring-indigo-500 focus:border-indigo-500 bg-gray-700 text-white placeholder-gray-400" 
               placeholder="Email" 

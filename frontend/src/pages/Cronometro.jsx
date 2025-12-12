@@ -12,31 +12,58 @@ import {
 
 import { formatTime } from '../utils';
 
-// LocalStorage keys
 const HOURLY_RATE_KEY = 'freelancerhub_hourly_rate';
 
-// Endpoints da API
+
 const TASKS_ENDPOINT = '/api/tasks';
 const TIME_ENTRIES_ENDPOINT = '/api/time-entries';
 
+
+// Função auxiliar para formatar o valor como 0,00
+const formatCurrency = (value) => {
+    if (!value) return '0,00';
+    
+    // Remove tudo que não for dígito
+    const cleanValue = String(value).replace(/\D/g, '');
+    if (cleanValue === '') return '0,00';
+
+    // Garante no mínimo 3 dígitos (para R$0,00)
+    let paddedValue = cleanValue.padStart(3, '0');
+
+    // Insere a vírgula para separar os centavos (últimos 2 dígitos)
+    const integerPart = paddedValue.slice(0, -2);
+    const decimalPart = paddedValue.slice(-2);
+    
+    // Formata a parte inteira (milhares)
+    let formattedInteger = integerPart.replace(/^0+/, ''); // Remove zeros à esquerda
+
+    if (formattedInteger === '') formattedInteger = '0'; // Se só sobrou zero, exibe '0'
+
+    // Adiciona o ponto de milhar (apenas na exibição)
+    return `${formattedInteger.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.')},${decimalPart}`;
+};
+
+
 export default function Cronometro(){
 
-    // ================== STATES ==================
+    // ############## status ######################
     const [tasks, setTasks] = useState([]);
     const [selectedTask, setSelectedTask] = useState(null);
     const [time, setTime] = useState(0);
     const [isRunning, setIsRunning] = useState(false);
     
-    // Estados para a API
+    // estados para a API
     const [startTime, setStartTime] = useState(null); 
     const [notes, setNotes] = useState('');
     const [isLoadingTasks, setIsLoadingTasks] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     
-    // Estado do Valor/Hora (rate)
-    const [rate, setRate] = useState(parseFloat(localStorage.getItem(HOURLY_RATE_KEY) || '0.00'));
+    // estado do Valor/Hora (rate) - Inicializa com o valor limpo do localStorage, formatado para R$0,00
+    const initialRateValue = localStorage.getItem(HOURLY_RATE_KEY) || '000'; 
+    const [rateInput, setRateInput] = useState(formatCurrency(initialRateValue));
 
-    // Agrupa tarefas por projeto para o dropdown
+
+    // Agrupa tarefas por projeto para o dropdown 
     const projectsMap = useMemo(() => {
         const map = {};
         tasks.forEach(task => {
@@ -53,12 +80,15 @@ export default function Cronometro(){
         return Object.values(map);
     }, [tasks]);
 
-    // ================== CÁLCULOS ==================
-
+     // ############## calculos ######################
+    
+    // CONVERTE PARA FLOAT PARA CÁLCULOS
     const hourlyRate = useMemo(() => {
-        const hourlyRate = isNaN(rate) ? 0 : rate;
-        return hourlyRate;
-    }, [rate]);
+        // Pega o valor formatado (ex: '1.234,56') e converte para float (ex: 1234.56)
+        const cleanRate = rateInput.replace(/\./g, '').replace(',', '.'); // Remove pontos de milhar e troca vírgula por ponto
+        const parsedRate = parseFloat(cleanRate) || 0;
+        return isNaN(parsedRate) ? 0 : parsedRate;
+    }, [rateInput]);
 
     const estimatedCost = useMemo(() => {
         return (time / 3600) * hourlyRate;
@@ -67,11 +97,17 @@ export default function Cronometro(){
     // ================== HANDLERS ==================
 
     const handleRateChange = (e) => {
-        const newValue = e.target.value;
-        const newRate = parseFloat(newValue) || 0.00; 
+        let value = e.target.value;
         
-        setRate(newRate);
-        localStorage.setItem(HOURLY_RATE_KEY, newRate.toFixed(2));
+        // 1. Remove caracteres não numéricos
+        const cleanValue = value.replace(/\D/g, ''); 
+
+        // 2. Formata para o padrão R$ 0,00 e atualiza o estado de exibição
+        const formattedValue = formatCurrency(cleanValue);
+        setRateInput(formattedValue);
+        
+        // 3. Salva o valor LIMPO (ex: '12345' para 123,45) no LocalStorage, para ser restaurado corretamente
+        localStorage.setItem(HOURLY_RATE_KEY, cleanValue);
     };
 
 
@@ -214,20 +250,24 @@ export default function Cronometro(){
                         )}
                     </div>
 
-                    {/* Campo de Valor/Hora (Ocupa 1/3) */}
                     <div className="md:w-1/3 w-full">
                         <label htmlFor="hourlyRate" className="block text-sm font-medium text-gray-400 mb-2">
                             2. Valor/Hora para Cálculo (R$):
                         </label>
-                        <input
-                            type="number"
-                            id="hourlyRate"
-                            step="0.01"
-                            value={rate.toFixed(2)} 
-                            onChange={handleRateChange}
-                            className="w-full p-3 border border-gray-600 rounded bg-gray-700 text-white placeholder-gray-400"
-                            disabled={isRunning || isSaving}
-                        />
+                        
+                        <div className="relative">
+                            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-300 font-semibold">R$</span>
+                            <input
+                                type="text"
+                                inputMode="decimal"
+                                id="hourlyRate"
+                                value={rateInput}
+                                onChange={handleRateChange}
+                                className="w-full p-3 pl-10 border border-gray-600 rounded bg-gray-700 text-white placeholder-gray-400 text-right"
+                                disabled={isRunning || isSaving}
+                                placeholder="0,00"
+                            />
+                        </div>
                     </div>
 
                 </div>
@@ -237,7 +277,7 @@ export default function Cronometro(){
 
             {/* 2. Exibição e Controles do Cronômetro */}
             <div className="bg-gray-800 p-6 rounded-lg shadow-xl mb-6 text-center">
-                <div className="text-7xl font-mono mb-4 text-indigo-400">
+                <div className="text-7xl font-mono mb-4 text-cyan-300">
                     {formatTime(time)}
                 </div>
 
@@ -248,7 +288,8 @@ export default function Cronometro(){
                     </div>
                     <div className="flex items-center gap-1">
                         <CurrencyDollarIcon className="w-5 h-5"/>
-                        <p>Custo Estimado: R$ {estimatedCost.toFixed(2)}</p> 
+                        {/* Exibe o custo estimado formatado como moeda brasileira */}
+                        <p>Custo Estimado: {estimatedCost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p> 
                     </div>
                 </div>
 

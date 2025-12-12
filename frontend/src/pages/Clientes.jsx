@@ -1,12 +1,8 @@
-// src/pages/Clientes.jsx
 import React, { useState, useEffect, useCallback } from 'react';
-// Importação da API configurada com Axios
-import api from '../api'; // Importa a instância 'api'
+import api from '../api'; 
 
-// URL base da API para clientes (Usaremos o Axios/API.js, mas o endpoint é /clients)
+
 const CLIENTS_ENDPOINT = 'api/clients'; 
-// Note: O Axios no arquivo 'api.js' já deve ter a baseURL '/api'
-// Se a baseURL for '', use const CLIENTS_ENDPOINT = '/api/clients';
 
 // ################ lista de clientes #######
 function ClientesLista({ clientes, onEdit, onDelete }) {
@@ -24,13 +20,14 @@ function ClientesLista({ clientes, onEdit, onDelete }) {
                             <div>
                                 <p className="text-lg font-bold text-white">{cliente.name}</p>
                                 <p className="text-sm text-gray-400">
-                                    ID: {cliente.id} | Email: {cliente.email} | Contato: {cliente.phone || 'N/A'} | Pessoa de Contato: {cliente.contact_person || 'N/A'}
+                                    ID: {cliente.id} | Email: {cliente.email} | Contato: {cliente.phone || 'N/A'} | Endereço: {cliente.contact_person || 'N/A'}
                                 </p>
                             </div>
                             <div className="flex gap-2">
                                 <button 
                                     onClick={() => onEdit(cliente)} 
-                                    className="text-sm px-3 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+                                    // ALTERADO: bg-indigo-600 -> bg-cyan-400, text-white -> text-gray-900
+                                    className="text-sm px-3 py-1 bg-cyan-400 text-gray-900 rounded hover:bg-cyan-500" 
                                 >
                                     Editar
                                 </button>
@@ -55,13 +52,12 @@ export default function Clientes() {
     const [clientes, setClientes] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
-    
     const [searchTerm, setSearchTerm] = useState('');
     
     // Estados para o Modal de Criação/Edição
     const [showModal, setShowModal] = useState(false);
-    const [isSubmitting, setIsSubmitting] = useState(false); // Novo estado de submissão
-    const [currentClient, setCurrentClient] = useState(null); // Cliente em edição (null para criação)
+    const [isSubmitting, setIsSubmitting] = useState(false); 
+    const [currentClient, setCurrentClient] = useState(null); 
     
     // Estado do Formulário (Ajustado para os campos do Backend)
     const [form, setForm] = useState({ 
@@ -73,18 +69,16 @@ export default function Clientes() {
 
     // ################# FUNÇÕES DE ACESSO À API COM AXIOS ###################
 
-    // Função para buscar a lista de clientes (GET)
+    // Função que vai buscar a lista de clientes (GET)
     const fetchClients = useCallback(async () => {
         setIsLoading(true);
         setError(null);
         try {
-            // Usa a instância 'api' do Axios
             const response = await api.get(CLIENTS_ENDPOINT);
 
             setClientes(response.data);
         } catch (err) {
             console.error('Erro ao buscar clientes:', err);
-            // Captura o erro formatado do backend ou uma mensagem genérica
             const errorMessage = err.response?.data?.error || 'Falha ao carregar clientes. Verifique a conexão com a API.';
             setError(errorMessage);
         } finally {
@@ -110,10 +104,9 @@ export default function Clientes() {
         setError(null);
 
         try {
-            // Usa a instância 'api' do Axios
             const response = await api.delete(`${CLIENTS_ENDPOINT}/${currentClient.id}`);
             
-            // O backend retorna { message: 'Cliente excluído com sucesso.' }
+            
             alert(response.data.message);
             
             // Atualiza a lista
@@ -122,7 +115,6 @@ export default function Clientes() {
             
         } catch (err) {
             console.error('Erro ao excluir cliente:', err);
-            // Trata o erro de FK (conflito 409) ou outro erro
             const errorMessage = err.response?.data?.error || 'Falha na exclusão. Tente novamente.';
             alert(`Erro: ${errorMessage}`);
         } finally {
@@ -156,7 +148,6 @@ export default function Clientes() {
 
         } catch (err) {
             console.error(`Erro ao ${isEditing ? 'atualizar' : 'criar'} cliente:`, err);
-            // Tenta pegar a mensagem de erro do backend (ex: nome obrigatório)
             const errorMessage = err.response?.data?.error || 'Falha na comunicação com o servidor.';
             setError(errorMessage);
             alert(`Erro: ${errorMessage}`);
@@ -192,7 +183,7 @@ export default function Clientes() {
         setShowModal(true);
     }
 
-    // Função para exclusão a partir do componente filho ClientesLista
+    // Função para exclusão a partir do componente de ClientesLista
     function handleListDelete(cliente) {
         setCurrentClient(cliente); 
         // Chama a função de exclusão no modal
@@ -226,11 +217,13 @@ export default function Clientes() {
                     placeholder="Buscar por nome ou email..."
                     value={searchTerm}
                     onChange={handleSearch}
-                    className="w-1/2 p-3 border border-gray-600 rounded bg-gray-700 text-white placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500"
+                    // ALTERADO: focus:ring-indigo-500 -> focus:ring-cyan-500
+                    className="w-1/2 p-3 border border-gray-600 rounded bg-gray-700 text-white placeholder-gray-400 focus:ring-cyan-500 focus:border-cyan-500"
                 />
                 <button 
                     onClick={handleCreate} 
-                    className="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition duration-150 flex items-center gap-2"
+                    // ALTERADO: bg-indigo-600 -> bg-cyan-400, text-white -> text-gray-900
+                    className="bg-cyan-400 text-gray-900 px-6 py-3 rounded-lg hover:bg-cyan-500 transition duration-150 flex items-center gap-2"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
@@ -241,7 +234,8 @@ export default function Clientes() {
 
             {/* Status de Carregamento e Erro */}
             {isLoading && (
-                <p className="text-indigo-400 mt-4 text-center">Carregando clientes...</p>
+                // ALTERADO: text-indigo-400 -> text-cyan-400
+                <p className="text-cyan-400 mt-4 text-center">Carregando clientes...</p>
             )}
 
             {error && (
@@ -286,7 +280,7 @@ export default function Clientes() {
                             
                             {/* Pessoa de Contato (API: contact_person) */}
                             <input 
-                                placeholder="Pessoa de Contato" 
+                                placeholder="Endereço" 
                                 value={form.contact_person} 
                                 onChange={e => setForm({...form, contact_person: e.target.value})} 
                                 className="w-full p-3 border border-gray-600 rounded bg-gray-700 text-white placeholder-gray-400"
@@ -314,7 +308,7 @@ export default function Clientes() {
                             {/* BOTÕES DE AÇÃO */}
                             <div className="flex justify-between items-center pt-2">
                                 
-                                {/* BOTÃO DE EXCLUIR (Apenas visível na Edição) */}
+                                {/* BOTÃO DE EXCLUIR (Apenas visível na Edição, depois adiciono) */}
                                 <div>
                                     {currentClient && (
                                         <button 
@@ -341,8 +335,9 @@ export default function Clientes() {
                                     <button 
                                         type="submit" 
                                         disabled={isSubmitting}
-                                        className={`px-4 py-2 bg-indigo-600 text-white rounded transition 
-                                        ${isSubmitting ? 'opacity-50 cursor-not-allowed' : 'hover:bg-indigo-700'}`}
+                                        // ALTERADO: bg-indigo-600 -> bg-cyan-400, text-white -> text-gray-900
+                                        className={`px-4 py-2 bg-cyan-400 text-gray-900 rounded transition 
+                                        ${isSubmitting ? 'opacity-50 cursor-not-allowed' : 'hover:bg-cyan-500'}`}
                                     >
                                         {isSubmitting ? 'Salvando...' : submitButtonText}
                                     </button>

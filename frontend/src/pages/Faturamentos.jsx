@@ -13,32 +13,29 @@ import {
     BanknotesIcon, 
 } from "@heroicons/react/24/solid";
 
-// REMOVIDO: MOCK_PROJECTS, MOCK_CLIENTES
-// REMOVIDO: TIME_ENTRIES_KEY
-import { generateInvoicePDF } from "../utils/generateInvoicePDF";
+import { generateInvoicePDF } from "../utils/generateInvoicePDF"; //falta
 import { formatDate, formatTime } from "../utils"; 
 
-// A Taxa Horária e o Profile do Usuário podem permanecer em localStorage/Context
+
 const HOURLY_RATE_KEY = "freelancerhub_hourly_rate";
 const USER_PROFILE_KEY = 'user_profile'; 
 const BILLED_PROJECTS_KEY = "freelancerhub_billed_projects"; 
 
 
-// --- Constantes de Status ATUALIZADAS (Simplificadas para a UI) ---
+
 const PAYMENT_STATUS = {
-    // Usando 'pending' para agrupar o que não foi pago (como o backend faz)
+
     PENDING: "Pendente",
     PAID: "Pago",
-    UNBILLED: "Não Faturado", // Mantido para lógica de agrupamento
+    UNBILLED: "Não Faturado",
 };
 
-// ENDPOINTS DA API
+
 const TIME_ENTRIES_ENDPOINT = '/api/time-entries';
-// A atualização de status de faturas é em /api/invoices/:id/status, mas aqui tratamos entradas de tempo
+
 const INVOICES_ENDPOINT = '/api/invoices'; 
 
 
-// --- Funções Auxiliares de Sincronização (Mantidas no LocalStorage) ---
 const getBilledProjects = () => {
     return JSON.parse(localStorage.getItem(BILLED_PROJECTS_KEY) || '[]');
 };
@@ -47,15 +44,15 @@ const saveBilledProjects = (projectIds) => {
     localStorage.setItem(BILLED_PROJECTS_KEY, JSON.stringify(projectIds));
 };
 
-// --- Componentes Auxiliares (Não alterados) ---
+
 function Button({ children, onClick, color = 'indigo', title, disabled = false }) {
-    // ... (CÓDIGO INALTERADO)
+
     const baseClasses = `p-2 rounded flex items-center justify-center transition \
         ${disabled ? 'bg-gray-600 text-gray-400 cursor-not-allowed' : 'hover:scale-105'} \
         `;
 
     const colorClasses = disabled ? '' :
-        `${color === 'indigo' ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : ''} \
+        `${color === 'indigo' ? 'bg-indigo-600 hover:bg-cyan-300 text-white' : ''} \
         ${color === 'green' ? 'bg-green-600 hover:bg-green-700 text-white' : ''} \
         ${color === 'purple' ? 'bg-purple-600 hover:bg-purple-700 text-white' : ''} \
         ${color === 'red' ? 'bg-red-600 hover:bg-red-700 text-white' : ''} \
@@ -73,7 +70,6 @@ function Button({ children, onClick, color = 'indigo', title, disabled = false }
 }
 
 function Resumo({ label, value, color, icon: Icon }) {
-    // ... (CÓDIGO INALTERADO)
     return (
         <div className={`p-4 bg-gray-800 rounded shadow-lg text-white flex flex-col justify-between \
             ${color === 'green' ? 'border-l-4 border-green-500' : ''}\
@@ -99,41 +95,25 @@ export default function Faturamentos() {
     const [search, setSearch] = useState("");
     const [hourlyRate, setHourlyRate] = useState(0);
     const [openProject, setOpenProject] = useState({});
-    const [isLoading, setIsLoading] = useState(true); // Novo estado de loading
+    const [isLoading, setIsLoading] = useState(true); 
     
-    // Funções de formatação e ajuste para simular a estrutura antiga com dados da API
+ 
     const mapEntryFromApi = (entry) => {
-        // time_entriesController.js retorna:
-        // 'time_entries.*', 'tasks.title as task_title', 'tasks.project_id', 'projects.title as project_title', 'projects.client_id'
-        
-        // Ajusta a entrada para a estrutura esperada pelo frontend
-        // O campo `is_billed` no backend é um booleano que determina se a entrada foi faturada (PENDING)
-        // O campo `status` está sendo simulado no frontend para o agrupamento
-        
-        // Simulação do mapeamento de status:
-        // is_billed (backend) = true -> PENDING (frontend)
-        // is_billed (backend) = false -> UNBILLED (frontend)
-        // Obs: O `Faturamentos.jsx` original migrava `isBilled: true` para PENDING, mas a lógica de status total está complexa.
-        // Vamos usar UNBILLED para `is_billed: false` e PENDING para `is_billed: true` inicialmente, 
-        // e usaremos a lógica de status do projeto do frontend para determinar o status de exibição.
-
         const hoursWorked = entry.duration_seconds / 3600;
 
         return {
             id: entry.id,
-            projectId: entry.project_id, // do join
-            taskTitle: entry.task_title, // do join
-            projectTitle: entry.project_title, // do join
-            client_id: entry.client_id, // do join
+            projectId: entry.project_id, 
+            taskTitle: entry.task_title,
+            projectTitle: entry.project_title,
+            client_id: entry.client_id, 
             durationSeconds: entry.duration_seconds,
-            hoursWorked: hoursWorked, // calculado
-            // Simulação de status do frontend baseada no `is_billed` do backend
+            hoursWorked: hoursWorked, 
             status: entry.is_billed ? PAYMENT_STATUS.PENDING : PAYMENT_STATUS.UNBILLED, 
-            date: entry.start_time, // usando start_time como data de referência
+            date: entry.start_time, 
         };
     };
 
-    // ---------------- LOAD DATA FROM API -----------------
     
     // Função para buscar os registros de tempo
     const fetchTimeEntries = useCallback(async () => {
@@ -157,8 +137,22 @@ export default function Faturamentos() {
     
     // Função para carregar a taxa horária (mantida no localStorage)
     const loadHourlyRate = useCallback(() => {
-        const savedRate = parseFloat(localStorage.getItem(HOURLY_RATE_KEY)) || 50.00;
-        setHourlyRate(savedRate);
+        // 1. Pega a string de dígitos do LocalStorage (ex: '12345')
+        const savedRateClean = localStorage.getItem(HOURLY_RATE_KEY); 
+        
+        let rate;
+        
+        if (savedRateClean) {
+            // 2. Converte para inteiro e divide por 100 para obter o valor correto (ex: 123.45)
+            // Isso é necessário porque o Cronômetro salva o valor como o número de centavos.
+            rate = parseInt(savedRateClean) / 100;
+        } else {
+            // Valor padrão se não estiver no LocalStorage
+            rate = 50.00; 
+        }
+        
+        // Garante que o rate é um número (fallback para 0 se NaN)
+        setHourlyRate(isNaN(rate) ? 0 : rate); 
     }, []);
 
     
@@ -186,8 +180,8 @@ export default function Faturamentos() {
             if (!acc[projectId]) {
                 acc[projectId] = {
                     id: projectId,
-                    title: entry.projectTitle, // do join
-                    clientName: clientName, // Simulação
+                    title: entry.projectTitle, 
+                    clientName: clientName, 
                     totalDurationSeconds: 0,
                     totalHours: 0,
                     totalValue: 0,
@@ -284,7 +278,6 @@ export default function Faturamentos() {
 
         try {
             const data = {
-                // O backend agora calcula o client_id e o valor total (amount)
                 time_entry_ids: idsToBill
             };
 
@@ -292,16 +285,11 @@ export default function Faturamentos() {
             await api.post(INVOICES_ENDPOINT, data); 
 
             alert('Fatura criada com sucesso! Atualizando registros de tempo...');
-            
-            // Recarrega as entradas para refletir as mudanças no status is_billed
             fetchTimeEntries();
-            
-            // Despacha evento de atualização
             window.dispatchEvent(new Event('freelancerhub:billed_update'));
 
         } catch (error) {
             console.error('Erro ao criar fatura:', error);
-            // Mostrar erro do backend se disponível
             const errorMessage = error.response?.data?.error || 'Erro ao criar fatura. Verifique o console para detalhes.';
             alert(errorMessage);
         }
@@ -345,7 +333,6 @@ export default function Faturamentos() {
 
             {/* 1. Resumo */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                {/* ... (CÓDIGO INALTERADO) */}
                 <Resumo 
                     label="Projetos Registrados" 
                     value={totalProjects} 
@@ -374,7 +361,6 @@ export default function Faturamentos() {
 
             {/* 2. Filtros e Configurações */}
             <div className="bg-gray-800 p-5 rounded-xl shadow-xl border border-gray-700 mb-8">
-                {/* ... (CÓDIGO INALTERADO) */}
                 <h2 className="text-xl font-semibold text-white mb-4">Configurações e Filtros</h2>
                 
                 <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
@@ -383,6 +369,7 @@ export default function Faturamentos() {
                     <div className="flex items-center gap-2">
                         <CurrencyDollarIcon className="h-6 w-6 text-indigo-500" />
                         <span className="text-gray-300 font-medium">Taxa Horária Atual:</span>
+                        {/* Exibe o valor já convertido */}
                         <span className="text-white font-bold">R$ {hourlyRate.toFixed(2)}</span>
                     </div>
 

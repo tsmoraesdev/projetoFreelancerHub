@@ -29,8 +29,7 @@ export default function Header({ user, onLogout }) {
                     onClick={() => navigate('/perfil')} 
                 >
                     <span className="text-white font-semibold text-base hidden sm:inline">{userName}</span>
-                    {/* Aumentamos o tamanho do ícone de perfil para 9x9 */}
-                    <UserCircleIcon className="h-9 w-9 text-indigo-400" />
+                    <UserCircleIcon className="h-9 w-9 text-cyan-300" />
                 </div>
 
                 {/* 2. Botão Sair */}

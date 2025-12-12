@@ -120,8 +120,6 @@ export default function Perfil() {
         setLoading(true);
 
         try {
-            // Chamada para um endpoint que deve ser criado no backend (ex: /api/auth/update-credentials)
-            // Note: Se o App.jsx tem uma função onLogout, seria melhor chamá-la aqui.
             await api.post('/api/auth/update-credentials', payload);
             
             setCredentialStatus('success');
@@ -173,7 +171,7 @@ export default function Perfil() {
                 mas mantemos a tag form para os dados de faturamento. */}
             <form onSubmit={handleSave} className="space-y-8 max-w-4xl mx-auto">
                 
-                {/* ------------------------- 1. DADOS DA EMPRESA / PESSOAL ------------------------- */}
+                {/* -------------------------  DADOS DA EMPRESA / PESSOAL ------------------------- */}
                 <Card title="Dados do Emissor" icon={BuildingOffice2Icon}>
                     <div className="grid md:grid-cols-2 gap-4">
                         <Input 
@@ -222,7 +220,7 @@ export default function Perfil() {
                     </div>
                 </Card>
 
-                {/* ------------------------- 2. DADOS DE CONTATO (Perfil/Faturamento) ------------------------- */}
+                {/* ---------  DADOS DE CONTATO (Perfil/Faturamento) ------------------------- */}
                 <Card title="Dados de Contato" icon={DevicePhoneMobileIcon}>
                     <div className="grid md:grid-cols-2 gap-4">
                         <Input 
@@ -243,7 +241,7 @@ export default function Perfil() {
                     </div>
                 </Card>
 
-                {/* ------------------------- 3. DADOS BANCÁRIOS ------------------------- */}
+                {/* ------------------ DADOS BANCÁRIOS ------------------------- */}
                 <Card title="Dados Bancários para Pagamento" icon={BanknotesIcon}>
                     <p className="text-sm text-gray-400 mb-4">
                         Esses dados serão exibidos na fatura para que seus clientes saibam para onde transferir.
@@ -309,7 +307,7 @@ export default function Perfil() {
 
             </form>
 
-            {/* ------------------------- 4. ALTERAÇÃO DE CREDENCIAIS ------------------------- */}
+            {/* -------------------- ALTERAÇÃO DE CREDENCIAIS ------------------------- */}
             <div className="max-w-4xl mx-auto mt-8">
                 <Card title="Alterar E-mail de Login e Senha" icon={KeyIcon}>
                     <p className="text-sm text-gray-400 mb-4">

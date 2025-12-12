@@ -12,7 +12,15 @@ import {
 // Importação da API configurada com Axios
 import api from '../api'; 
 
-import { PROJECT_STATUSES } from '../data/mocks'; 
+//import { PROJECT_STATUSES } from '../data/mocks'; 
+
+const PROJECT_STATUSES = [
+    "Proposta",
+    "Em Andamento",
+    "Concluído",
+    "Faturado"
+];
+
 
 // Endpoints
 const PROJECTS_ENDPOINT = 'api/projects';
@@ -60,6 +68,24 @@ export default function Projetos() {
         start_date: new Date().toISOString().split('T')[0], 
         due_date: '' 
     });
+
+    // adicionei agora
+
+    function formatDate(date) {
+        if (!date) return "Não informado";
+
+        const d = new Date(date);
+        // Garante que a data seja interpretada como UTC para evitar o problema de fuso horário
+        // 'T00:00:00' garante que a data seja tratada como início do dia
+        const dateString = date.includes('T') ? date : date + 'T00:00:00';
+        const dateObj = new Date(dateString);
+        
+        if (isNaN(dateObj.getTime())) return "Não informado";
+
+        // Usamos toLocaleDateString para formatação PT-BR
+        // O `timeZone: 'UTC'` é crucial para datas `yyyy-mm-dd` para que não haja mudança de dia
+        return dateObj.toLocaleDateString("pt-BR", { timeZone: 'UTC' });
+    }
 
   
 
@@ -262,7 +288,8 @@ export default function Projetos() {
             case "Proposta": return 'bg-blue-600 text-white';
             case "Em Andamento": return 'bg-yellow-600 text-gray-900';
             case "Concluído": return 'bg-green-600 text-white';
-            case "Planejamento": return 'bg-indigo-600 text-white'; // Novo status (do projectsController)
+            // ALTERADO DE indigo-600
+            case "Planejamento": return 'bg-cyan-600 text-white'; // Novo status (do projectsController)
             default: return 'bg-gray-600 text-white';
         }
     }
@@ -285,13 +312,15 @@ export default function Projetos() {
                     placeholder="Buscar por título ou cliente..."
                     value={searchTerm}
                     onChange={handleSearch}
-                    className="w-1/2 p-3 border border-gray-600 rounded bg-gray-700 text-white placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500"
+                    // ALTERADO focus:ring-indigo-500 e focus:border-indigo-500
+                    className="w-1/2 p-3 border border-gray-600 rounded bg-gray-700 text-white placeholder-gray-400 focus:ring-cyan-500 focus:border-cyan-500"
                 />
 
                 {/* Adicionar Projeto */}
                 <button 
                     onClick={handleCreate}
-                    className="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition duration-150 flex items-center gap-2"
+                    // ALTERADO bg-indigo-600 e hover:bg-indigo-700. text-gray-900 para contraste com cyan
+                    className="bg-cyan-400 text-gray-900 px-6 py-3 rounded-lg hover:bg-cyan-500 transition duration-150 flex items-center gap-2"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
@@ -302,7 +331,8 @@ export default function Projetos() {
             
             {/* Status de Carregamento e Erro */}
             {isLoading && (
-                <p className="text-indigo-400 mt-4 text-center">Carregando projetos...</p>
+                // ALTERADO text-indigo-400
+                <p className="text-cyan-400 mt-4 text-center">Carregando projetos...</p>
             )}
 
             {error && (
@@ -339,7 +369,8 @@ export default function Projetos() {
                                         </span>
                                         <button 
                                             onClick={() => handleEdit(project)}
-                                            className="text-indigo-400 hover:text-indigo-300"
+                                            // ALTERADO text-indigo-400 e hover:text-indigo-300
+                                            className="text-cyan-400 hover:text-cyan-300"
                                             title="Editar Projeto"
                                         >
                                             <PencilSquareIcon className="h-6 w-6" />
@@ -358,28 +389,29 @@ export default function Projetos() {
                                     <div className="space-y-2 text-sm text-gray-300">
                                         {/* Tipo de Cobrança (billing_type) e Valor Fixo */}
                                         <p className="flex items-center gap-2">
-                                            <TagIcon className="h-4 w-4 text-indigo-300" /> 
+                                            {/* ALTERADO text-indigo-300 */}
+                                            <TagIcon className="h-4 w-4 text-cyan-300" /> 
                                             Tipo: {project.billing_type === 'fixed' 
                                                 ? `Fixo (R$ ${parseFloat(project.fixed_value).toFixed(2)})`
                                                 : 'Por Hora'
                                             }
                                         </p>
-                                        {/* Data de Início (start_date) */}
+                                        {/* Data de Início (start_date) - CORRIGIDO */}
                                         <p className="flex items-center gap-2">
-                                            <CalendarIcon className="h-4 w-4 text-indigo-300" /> 
-                                            Início: {project.start_date ? new Date(project.start_date + 'T00:00:00').toLocaleDateString('pt-BR', {timeZone: 'UTC'}) : 'N/A'}
+                                            <CalendarIcon className="h-4 w-4 text-cyan-300" /> 
+                                            Início: {formatDate(project.start_date)}
                                         </p>
-                                        {/* Data Limite (due_date) */}
+                                        {/* Data Limite (due_date) - CORRIGIDO */}
                                         <p className="flex items-center gap-2">
-                                            <ClockIcon className="h-4 w-4 text-indigo-300" /> 
-                                            Prazo: {project.due_date ? new Date(project.due_date + 'T00:00:00').toLocaleDateString('pt-BR', {timeZone: 'UTC'}) : 'Não Definido'}
+                                            <ClockIcon className="h-4 w-4 text-cyan-300" /> 
+                                            Prazo: {formatDate(project.due_date) === "Não informado" ? "Não Definido" : formatDate(project.due_date)}
                                         </p>
                                     </div>
                                     
                                     <div className="mt-4 pt-4 border-t border-gray-700">
                                         <button 
                                             onClick={() => handleAccessProject(project.id)}
-                                            className="text-indigo-400 hover:text-indigo-300 font-semibold flex items-center gap-1"
+                                            className="text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1"
                                         >
                                             Acessar Kanban
                                             <ArrowRightIcon className="h-4 w-4 ml-1 transition transform hover:translate-x-1" />
@@ -446,8 +478,8 @@ export default function Projetos() {
                                 className="w-full p-3 border border-gray-600 rounded bg-gray-700 text-white"
                                 required
                             >
-                                {/* Inclui todos os status possíveis (incluindo "Planejamento" do autoStatus) */}
-                                {PROJECT_STATUSES.concat("Planejamento").map(status => (
+                                {/* CORRIGIDO: Inclui apenas os status definidos no topo do arquivo */}
+                                {PROJECT_STATUSES.map(status => (
                                     <option key={status} value={status}>
                                         {status}
                                     </option>
@@ -539,8 +571,9 @@ export default function Projetos() {
                                     <button 
                                         type="submit" 
                                         disabled={isSubmitting}
-                                        className={`px-4 py-2 bg-indigo-600 text-white rounded transition 
-                                        ${isSubmitting ? 'opacity-50 cursor-not-allowed' : 'hover:bg-indigo-700'}`}
+                                        // ALTERADO bg-indigo-600 e hover:bg-indigo-700
+                                        className={`px-4 py-2 bg-cyan-400 text-gray-900 rounded transition 
+                                        ${isSubmitting ? 'opacity-50 cursor-not-allowed' : 'hover:bg-cyan-500'}`}
                                     >
                                         {isSubmitting ? 'Salvando...' : submitButtonText}
                                     </button>

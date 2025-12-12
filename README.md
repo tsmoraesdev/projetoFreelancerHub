@@ -1,7 +1,10 @@
-# Kanban - Projeto (React + Node + MySQL + Docker)
+# FreelancerHub - Projeto (React + Node + MySQL + Docker)
 
 ## Requisitos
 - Docker & Docker Compose
+- jSPDF
+- QRCode
+
 
 ## Rodar local com Docker
 1. Copie `backend/.env.example` para `backend/.env` (se desejar altere)
@@ -12,3 +15,4 @@
 ## Observações
 - O banco é inicializado pelo script em `db/init.sql`.
 - Para produção ajuste secrets e volumes.
+

@@ -29,7 +29,8 @@ async function create(req, res) {
     try {
         const { task_id, start_time, end_time, duration_seconds, notes } = req.body;
 
-        if (!task_id || !start_time || !duration_seconds) {
+        // duration_seconds e start_time são obrigatórios, task_id é obrigatório.
+        if (!task_id || !start_time || duration_seconds === undefined || duration_seconds === null) {
             return res.status(400).json({ error: 'Campos obrigatórios: task_id, start_time e duration_seconds.' });
         }
 
@@ -45,14 +46,21 @@ async function create(req, res) {
         }
 
         // 2. Cria o registro
-        const [id] = await db('time_entries').insert({
+        const dataToInsert = {
             task_id,
             start_time,
-            end_time,
             duration_seconds,
             notes,
             is_billed: false
-        });
+        };
+
+        // Adiciona end_time apenas se for fornecido
+        if (end_time) {
+            dataToInsert.end_time = end_time;
+        }
+
+
+        const [id] = await db('time_entries').insert(dataToInsert);
 
         const newEntry = await db('time_entries').where({ id }).first();
         res.status(201).json(newEntry);

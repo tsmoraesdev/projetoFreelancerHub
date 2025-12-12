@@ -6,7 +6,7 @@ services:
       MYSQL_ROOT_PASSWORD: rootpass
       MYSQL_DATABASE: freelancerhub_db
       MYSQL_USER: freelancerhub_db
-      MYSQL_PASSWORD: fhpass
+      MYSQL_PASSWORD: ""
     volumes:
       - db_data:/var/lib/mysql
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro

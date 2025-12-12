@@ -19,11 +19,11 @@ import {
     ClockIcon,
     CurrencyDollarIcon,
     ChevronLeftIcon,
-    // ArrowRightOnRectangleIcon não é mais necessário aqui
+
 } from '@heroicons/react/24/solid';
 
 
-// --- Componente Auxiliar para Link de Navegação (mantido) ---
+// --- Componente Auxiliar para Link de Navegação (MUDANÇA AQUI) ---
 function NavButton({ to, icon: Icon, label, isSidebarOpen }) {
     return (
         <NavLink 
@@ -32,7 +32,7 @@ function NavButton({ to, icon: Icon, label, isSidebarOpen }) {
                 `flex items-center p-3 rounded-lg transition-colors duration-200 
                 ${isSidebarOpen ? 'justify-start' : 'justify-center'}
                 ${isActive 
-                    ? 'bg-indigo-700 text-white shadow-lg' 
+                    ? 'bg-cyan-400 text-gray-900 shadow-lg' // COR ALTERADA: 'bg-indigo-700 text-white' foi para 'bg-cyan-400 text-gray-900'
                     : 'text-gray-300 hover:bg-gray-700 hover:text-white'}
                 `
             }
@@ -49,8 +49,8 @@ function NavButton({ to, icon: Icon, label, isSidebarOpen }) {
     );
 }
 
-// --- Componente Principal Dashboard ---
-export default function Dashboard({ user, onLogout }) { // <-- onLogout é passado aqui
+// --- Componente Principal Dashboard (RESTANTE DO CÓDIGO) ---
+export default function Dashboard({ user, onLogout }) { 
     const location = useLocation();
     
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);

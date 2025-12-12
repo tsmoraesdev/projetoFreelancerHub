@@ -1,16 +1,11 @@
--- Arquivo: init_corrigido.sql
 
--- Se o seu ambiente for MySql/MariaDB
 CREATE DATABASE IF NOT EXISTS freelancerhub_db;
 USE freelancerhub_db;
 
--- 1. Tabela 'users' (Autenticação)
--- Mantida simples para focar em autenticação
 CREATE TABLE IF NOT EXISTS users (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(100) NOT NULL,
   email VARCHAR(150) NOT NULL UNIQUE,
-  -- Recomenda-se um campo VARCHAR maior (255) para armazenar hash de senha
   password VARCHAR(255) NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -18,25 +13,18 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE TABLE IF NOT EXISTS billing_profile (
   user_id INT PRIMARY KEY,
-  
   hourly_rate DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
-  
-
   cpf_cnpj VARCHAR(18) NULL, 
   address VARCHAR(255) NULL,
   cep VARCHAR(10) NULL,
   city VARCHAR(100) NULL,
   state VARCHAR(50) NULL,
   phone VARCHAR(20) NULL,
-  
-
   bank_name VARCHAR(100) NULL,
   agency VARCHAR(20) NULL,
   account VARCHAR(50) NULL,
   account_type ENUM('Corrente', 'Poupanca') DEFAULT 'Corrente',
-  
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
@@ -48,7 +36,6 @@ CREATE TABLE IF NOT EXISTS clients (
   email VARCHAR(150) NULL,
   phone VARCHAR(20) NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
@@ -61,20 +48,12 @@ CREATE TABLE IF NOT EXISTS projects (
   description TEXT NULL,
   start_date DATE NULL,
   due_date DATE NULL,
-  
- 
   billing_type ENUM('hourly', 'fixed') NOT NULL DEFAULT 'hourly',
   fixed_value DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
-  
-
   status ENUM('pending', 'active', 'completed', 'canceled') DEFAULT 'active',
-  
-  -
   invoice_id INT NULL, 
-  
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE RESTRICT 
 );
@@ -86,12 +65,9 @@ CREATE TABLE IF NOT EXISTS tasks (
   title VARCHAR(255) NOT NULL,
   description TEXT NULL,
   due_date DATE NULL,
-
   status ENUM('todo', 'doing', 'done') DEFAULT 'todo', 
-  
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  
   FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 );
 
@@ -104,9 +80,7 @@ CREATE TABLE IF NOT EXISTS time_entries (
   duration_seconds INT NULL,
   notes TEXT NULL,
   is_billed BOOLEAN DEFAULT FALSE,
-  
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  
   FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
 );
 
@@ -121,9 +95,7 @@ CREATE TABLE IF NOT EXISTS invoices (
   amount DECIMAL(10, 2) NOT NULL,
   status ENUM('pending', 'paid', 'canceled') DEFAULT 'pending', 
   pdf_path VARCHAR(255) NULL, 
-  
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE RESTRICT
 );

@@ -5,9 +5,7 @@ import { Droppable } from '@hello-pangea/dnd'
 export default function Column({ id, title, children }){
   const statusClass = `status-${id}`
   return (
-    // Fundo da coluna: bg-gray-800, Texto: text-white, Borda para definição
     <div className="bg-gray-800 p-4 rounded-xl shadow-lg border border-gray-700 h-full flex flex-col">
-      {/* Título: Texto branco e divisor de cinza mais claro */}
       <h3 className="font-bold mb-4 text-xl border-b border-gray-600 pb-2 text-white">{title}</h3>
       <div className={`${statusClass} mb-4`}></div>
       <Droppable droppableId={id}>
