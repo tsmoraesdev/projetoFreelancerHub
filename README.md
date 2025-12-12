@@ -35,51 +35,51 @@ O sistema é dividido em dois módulos independentes:
 
 
 ## Funcionalidades do Sistema
-Clientes
--Criar, editar e excluir clientes
--Associar clientes aos projetos
+Clientes  
+- Criar, editar e excluir clientes  
+- Associar clientes aos projetos  
 
-Projetos
--Cadastro completo de projetos
--Prazos, descrição e status
--Vinculação com clientes
+Projeto
+- Cadastro completo de projetos
+- Prazos, descrição e status
+- Vinculação com clientes
 
 Kanban
--Três colunas: Pendente, Em andamento, Concluído
--Arrastar e alterar status
--Atualização em tempo real
+- Três colunas: Pendente, Em andamento, Concluído
+- Arrastar e alterar status
+- Atualização em tempo real
 
 Cronômetro
--Iniciar/parar tempo de trabalho por projeto
--Envio automático para módulo de faturamento
+- Iniciar/parar tempo de trabalho por projeto
+- Envio automático para módulo de faturamento
 
 Faturamento
--Registros gerados pelo cronômetro
--Histórico de pagamentos
--Total mensal e anual
+- Registros gerados pelo cronômetro
+- Histórico de pagamentos
+- Total mensal e anual
 
 Autenticação
--Login com JWT
--Proteção de rotas no backend
--Persistência de sessão no frontend
+- Login com JWT
+- Proteção de rotas no backend
+- Persistência de sessão no frontend
 
 ## Tecnologias Utilizadas
 Backend
--Node.js
--Express
--Knex.js
--MySQL
--JWT Authentication
--Middleware customizados
--Docker
+- Node.js
+- Express
+- Knex.js
+- MySQL
+- JWT Authentication
+- Middleware customizados
+- Docker
 
 Frontend
--React
--Vite
--React Router DOM
--Axios
--TailwindCSS
--Hooks e componentização
+- React
+- Vite
+- React Router DOM
+- Axios
+- TailwindCSS
+- Hooks e componentização
 
 
 ## Comando para clonar repositório
@@ -92,11 +92,11 @@ git clone https://github.com/tsmoraesdev/projetoFreelancerHub.git
 freelancer_bd/db/init.sql
 
 ## Rodando o Backend
-cd backend
-npm install
-npm run dev
+- cd backend
+- npm install
+- npm run dev
 
 ## Rodando o Frontend
-cd frontend
-npm install
-npm run dev
+- cd frontend
+- npm install
+- npm run dev
